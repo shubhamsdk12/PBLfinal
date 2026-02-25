@@ -21,14 +21,18 @@ if not os.path.exists('.env'):
     sys.exit(1)
 
 # Import and run server
-try:
-    import uvicorn
-    print("Starting FastAPI server...")
-    print("API Documentation: http://localhost:8000/docs")
-    print("Press CTRL+C to stop\n")
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
-except KeyboardInterrupt:
-    print("\n\nServer stopped.")
-except Exception as e:
-    print(f"\nERROR: Failed to start server: {e}")
-    sys.exit(1)
+if __name__ == "__main__":
+    try:
+        import uvicorn
+        print("Starting FastAPI server...")
+        print("API Documentation: http://localhost:8000/docs")
+        print("Press CTRL+C to stop\n")
+        
+        # This guard is required for Windows to avoid infinite reload loops
+        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+        
+    except KeyboardInterrupt:
+        print("\n\nServer stopped.")
+    except Exception as e:
+        print(f"\nERROR: Failed to start server: {e}")
+        sys.exit(1)
