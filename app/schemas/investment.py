@@ -1,38 +1,41 @@
 """
 Pydantic schemas for Investment models.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, List
+from typing import Optional, List, Annotated
+from pydantic import PlainSerializer
 from app.models.investment import InvestmentTransactionType
+
+# Serialize Decimal as float for JSON
+DecimalFloat = Annotated[Decimal, PlainSerializer(lambda x: float(x), return_type=float)]
 
 
 class InvestmentBase(BaseModel):
     """Base investment schema."""
-    monthly_interest_rate: Decimal = Field(..., ge=0, le=100, decimal_places=2)
+    monthly_interest_rate: DecimalFloat = Field(..., ge=0, le=100)
 
 
 class InvestmentCreate(InvestmentBase):
     """Schema for creating a new investment."""
-    initial_balance: Decimal = Field(..., ge=0, decimal_places=2)
+    initial_balance: DecimalFloat = Field(..., ge=0)
 
 
 class InvestmentUpdate(BaseModel):
     """Schema for updating investment."""
-    monthly_interest_rate: Optional[Decimal] = Field(None, ge=0, le=100, decimal_places=2)
+    monthly_interest_rate: Optional[DecimalFloat] = Field(None, ge=0, le=100)
 
 
 class InvestmentResponse(InvestmentBase):
     """Schema for investment response."""
     id: int
     student_id: int
-    balance: Decimal
+    balance: DecimalFloat
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvestmentTransactionResponse(BaseModel):
@@ -40,25 +43,24 @@ class InvestmentTransactionResponse(BaseModel):
     id: int
     investment_id: int
     transaction_type: InvestmentTransactionType
-    amount: Decimal
-    balance_before: Decimal
-    balance_after: Decimal
+    amount: DecimalFloat
+    balance_before: DecimalFloat
+    balance_after: DecimalFloat
     notes: Optional[str] = None
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvestmentWithdrawRequest(BaseModel):
     """Schema for investment withdrawal request."""
-    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    amount: DecimalFloat = Field(..., gt=0)
     notes: Optional[str] = None
 
 
 class InvestmentDepositRequest(BaseModel):
     """Schema for investment deposit request."""
-    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    amount: DecimalFloat = Field(..., gt=0)
     notes: Optional[str] = None
 
 
@@ -66,9 +68,8 @@ class InvestmentSummaryResponse(BaseModel):
     """Schema for investment summary response."""
     investment: InvestmentResponse
     transactions: List[InvestmentTransactionResponse]
-    total_invested: Decimal
-    total_interest_earned: Decimal
-    total_withdrawn: Decimal
-    
-    class Config:
-        from_attributes = True
+    total_invested: DecimalFloat
+    total_interest_earned: DecimalFloat
+    total_withdrawn: DecimalFloat
+
+    model_config = ConfigDict(from_attributes=True)

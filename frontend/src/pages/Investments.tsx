@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { api, Investment, InvestmentSummary, InvestmentTransaction } from '../lib/api'
-import { TrendingUp, TrendingDown, Plus, Minus, DollarSign } from 'lucide-react'
+import { api, Investment, InvestmentSummary } from '../lib/api'
+import { TrendingUp, Plus, Minus, IndianRupee } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function Investments() {
@@ -127,7 +127,7 @@ export default function Investments() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Initial Balance ($)
+                  Initial Balance (₹)
                 </label>
                 <input
                   type="number"
@@ -211,11 +211,11 @@ export default function Investments() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
-            <DollarSign className="h-5 w-5 text-gray-400 mr-2" />
+            <IndianRupee className="h-5 w-5 text-gray-400 mr-2" />
             <div>
               <p className="text-sm text-gray-500">Current Balance</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${investment.balance.toFixed(2)}
+                ₹{investment.balance.toFixed(2)}
               </p>
             </div>
           </div>
@@ -241,7 +241,7 @@ export default function Investments() {
                 <div>
                   <p className="text-sm text-gray-500">Total Invested</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    ${summary.total_invested.toFixed(2)}
+                    ₹{summary.total_invested.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -253,7 +253,7 @@ export default function Investments() {
                 <div>
                   <p className="text-sm text-gray-500">Interest Earned</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    ${summary.total_interest_earned.toFixed(2)}
+                    ₹{summary.total_interest_earned.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export default function Investments() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount ($)
+                  Amount (₹)
                 </label>
                 <input
                   type="number"
@@ -313,7 +313,7 @@ export default function Investments() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount ($)
+                  Amount (₹)
                 </label>
                 <input
                   type="number"
@@ -326,7 +326,7 @@ export default function Investments() {
                   placeholder="0.00"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Available: ${investment.balance.toFixed(2)}
+                  Available: ₹{investment.balance.toFixed(2)}
                 </p>
               </div>
               <div className="flex space-x-2">
@@ -386,10 +386,10 @@ export default function Investments() {
                     }`}
                   >
                     {transaction.transaction_type === 'WITHDRAW' ? '-' : '+'}
-                    ${transaction.amount.toFixed(2)}
+                    ₹{transaction.amount.toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Balance: ${transaction.balance_after.toFixed(2)}
+                    Balance: ₹{transaction.balance_after.toFixed(2)}
                   </p>
                 </div>
               </div>

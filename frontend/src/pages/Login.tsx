@@ -20,7 +20,8 @@ export default function Login() {
       await signIn(email, password)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in')
+      const msg = err?.response?.data?.detail || err.message || 'Failed to sign in'
+      setError(msg)
     } finally {
       setLoading(false)
     }

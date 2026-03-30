@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard'
 import Expenses from './pages/Expenses'
 import Investments from './pages/Investments'
 import Alerts from './pages/Alerts'
+import History from './pages/History'
+import Chatbot from './pages/Chatbot'
 
 function App() {
   return (
@@ -57,6 +59,26 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Alerts />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <History />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chatbot"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Chatbot />
                 </Layout>
               </ProtectedRoute>
             }

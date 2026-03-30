@@ -2,7 +2,7 @@
 Investment service for managing student investments and transactions.
 """
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from decimal import Decimal
 from app.models.investment import Investment, InvestmentTransaction, InvestmentTransactionType
 from app.schemas.investment import InvestmentSummaryResponse
@@ -110,7 +110,7 @@ class InvestmentService:
         Withdraw money from investment.
         """
         if investment.balance < amount:
-            raise ValueError(f"Insufficient balance. Available: ${investment.balance:.2f}, Requested: ${amount:.2f}")
+            raise ValueError(f"Insufficient balance. Available: ₹{investment.balance:.2f}, Requested: ₹{amount:.2f}")
         
         balance_before = investment.balance
         investment.balance -= amount

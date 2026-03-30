@@ -1,3 +1,3 @@
 """
-Authentication module for Supabase JWT verification.
+Authentication module for local JWT verification.
 """

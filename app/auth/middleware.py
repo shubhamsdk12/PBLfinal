@@ -1,6 +1,6 @@
 """
-Supabase JWT authentication middleware.
-Verifies JWT tokens from Supabase Auth and extracts user information.
+Local JWT authentication middleware.
+Verifies JWT tokens signed by our backend and extracts user information.
 """
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -16,42 +16,39 @@ security = HTTPBearer()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """
-    Verify Supabase JWT token and return decoded payload.
-    
+    Verify local JWT token and return decoded payload.
+
     Args:
         credentials: HTTP Bearer token from request header
-        
+
     Returns:
         Decoded JWT payload with user information
-        
+
     Raises:
         HTTPException: If token is invalid or expired
     """
     token = credentials.credentials
-    
+
     try:
-        # Decode JWT token using Supabase JWT secret
         payload = jwt.decode(
             token,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            options={"verify_aud": False}  # Supabase tokens may not have aud claim
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
         )
-        
-        # Extract user ID from token
+
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token: missing user ID"
             )
-        
+
         return payload
-        
+
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {str(e)}"
+            detail=f"Invalid or expired token: {str(e)}"
         )
 
 
@@ -61,29 +58,29 @@ def get_current_user(
 ) -> Student:
     """
     Get current authenticated student from database.
-    
+
     Args:
         payload: Decoded JWT payload
         db: Database session
-        
+
     Returns:
         Student model instance
-        
+
     Raises:
         HTTPException: If student not found
     """
-    supabase_user_id = payload.get("sub")
-    
+    student_id = int(payload.get("sub"))
+
     student = db.query(Student).filter(
-        Student.supabase_user_id == supabase_user_id
+        Student.id == student_id
     ).first()
-    
+
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student account not found. Please register first."
+            detail="Student account not found."
         )
-    
+
     return student
 
 
@@ -99,12 +96,12 @@ def get_optional_user(
     """
     if not credentials:
         return None
-    
+
     try:
         payload = verify_token(credentials)
-        supabase_user_id = payload.get("sub")
+        student_id = int(payload.get("sub"))
         student = db.query(Student).filter(
-            Student.supabase_user_id == supabase_user_id
+            Student.id == student_id
         ).first()
         return student
     except HTTPException:

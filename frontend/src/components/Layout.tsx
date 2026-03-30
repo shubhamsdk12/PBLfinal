@@ -1,12 +1,14 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { 
-  LayoutDashboard, 
-  Receipt, 
-  TrendingUp, 
-  Bell, 
+import {
+  LayoutDashboard,
+  Receipt,
+  TrendingUp,
+  Bell,
   LogOut,
-  Wallet
+  Wallet,
+  History,
+  MessageCircle,
 } from 'lucide-react'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -14,8 +16,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const handleSignOut = async () => {
-    await signOut()
+  const handleSignOut = () => {
+    signOut()
     navigate('/login')
   }
 
@@ -23,7 +25,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Expenses', href: '/expenses', icon: Receipt },
     { name: 'Investments', href: '/investments', icon: TrendingUp },
+    { name: 'History', href: '/history', icon: History },
     { name: 'Alerts', href: '/alerts', icon: Bell },
+    { name: 'Chatbot', href: '/chatbot', icon: MessageCircle },
   ]
 
   return (

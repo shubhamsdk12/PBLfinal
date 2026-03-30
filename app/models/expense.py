@@ -51,29 +51,39 @@ class DailyExpenseTemplate(Base):
 class Expense(Base):
     """
     Individual expense transaction record.
-    
+
     This is append-only - expenses are never modified or deleted.
-    Each expense represents a checked item from the daily checklist.
+    Each expense represents a checked item from the daily checklist or an additional expense.
     """
     __tablename__ = "expenses"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
-    category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=False, index=True)
-    
+    category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=True, index=True)
+
     # Expense Details
     amount = Column(Numeric(10, 2), nullable=False)
     expense_date = Column(Date, nullable=False, index=True)  # Date of expense
     is_additional = Column(Boolean, default=False, nullable=False)  # True if unplanned/additional expense
-    
+
+    # Custom category for additional expenses (when category_id is null)
+    custom_category = Column(String(100), nullable=True)
+
     # Metadata
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    
+
     # Relationships
     student = relationship("Student", back_populates="expenses")
     category = relationship("ExpenseCategory", back_populates="expenses")
-    
+
+    @property
+    def category_name(self) -> str:
+        """Return the category name for API responses."""
+        if self.custom_category:
+            return self.custom_category
+        return self.category.name if self.category else None
+
     def __repr__(self):
         return f"<Expense(id={self.id}, student_id={self.student_id}, amount={self.amount}, date={self.expense_date})>"
 

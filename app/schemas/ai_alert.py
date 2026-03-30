@@ -1,7 +1,7 @@
 """
 Pydantic schemas for AI Alert models.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Optional
 from app.models.ai_alert import AlertType, AlertSeverity
@@ -35,6 +35,5 @@ class AIAlertResponse(AIAlertBase):
     created_at: datetime
     read_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
-    
-    class Config:
-        from_attributes = True
+
+    model_config = ConfigDict(from_attributes=True)

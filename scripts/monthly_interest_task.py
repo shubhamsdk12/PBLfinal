@@ -38,7 +38,7 @@ def credit_monthly_interest():
                 InvestmentService.credit_interest(db, investment)
                 print(f"✅ Credited interest to investment {investment.id} "
                       f"(Student ID: {investment.student_id}, "
-                      f"Balance: ${investment.balance:.2f})")
+                      f"Balance: ₹{investment.balance:.2f})")
             except Exception as e:
                 print(f"❌ Error crediting interest to investment {investment.id}: {e}")
         

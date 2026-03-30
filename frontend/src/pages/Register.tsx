@@ -33,7 +33,8 @@ export default function Register() {
       await signUp(email, password, name)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Failed to create account')
+      const msg = err?.response?.data?.detail || err.message || 'Failed to create account'
+      setError(msg)
     } finally {
       setLoading(false)
     }

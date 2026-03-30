@@ -3,7 +3,6 @@ Application configuration settings.
 Loads environment variables and provides configuration for the application.
 """
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -12,10 +11,10 @@ class Settings(BaseSettings):
     # Database Configuration
     DATABASE_URL: str
     
-    # Supabase Configuration
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
-    SUPABASE_JWT_SECRET: str
+    # JWT Configuration (local auth)
+    JWT_SECRET: str
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_HOURS: int = 24 * 7  # 7 days
     
     # Application Settings
     APP_NAME: str = "Smart Student Expense & Budget System"

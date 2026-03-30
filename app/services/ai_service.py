@@ -54,8 +54,8 @@ class AIService:
             if days_remaining > 0:
                 daily_allowance = remaining_budget / days_remaining
                 # If daily allowance is less than 10% of monthly budget per day
-                avg_daily_budget = monthly_budget / 30
-                if daily_allowance < (avg_daily_budget * 0.5):
+                avg_daily_budget = monthly_budget / Decimal("30")
+                if daily_allowance < (avg_daily_budget * Decimal("0.5")):
                     return "Critical"
             return "Caution"
         
@@ -120,7 +120,7 @@ class AIService:
                 alert_type=AlertType.BUDGET_RISK,
                 severity=AlertSeverity.CRITICAL,
                 title="Budget Exhausted",
-                message=f"Your budget has been exceeded by ${abs(remaining_budget):.2f}. "
+                message=f"Your budget has been exceeded by ₹{abs(remaining_budget):.2f}. "
                        f"Consider reviewing your expenses or adjusting your budget."
             ))
         
@@ -132,8 +132,8 @@ class AIService:
                 alert_type=AlertType.BUDGET_RISK,
                 severity=AlertSeverity.CRITICAL,
                 title="Budget Running Critically Low",
-                message=f"You have ${remaining_budget:.2f} remaining for {days_remaining} days. "
-                       f"Daily allowance: ${daily_allowance:.2f}. "
+                message=f"You have ₹{remaining_budget:.2f} remaining for {days_remaining} days. "
+                       f"Daily allowance: ₹{daily_allowance:.2f}. "
                        f"Consider reducing non-essential expenses."
             ))
         
@@ -145,22 +145,22 @@ class AIService:
                 alert_type=AlertType.BUDGET_RISK,
                 severity=AlertSeverity.WARNING,
                 title="Budget Caution",
-                message=f"You have ${remaining_budget:.2f} remaining for {days_remaining} days. "
-                       f"Daily allowance: ${daily_allowance:.2f}. "
+                message=f"You have ₹{remaining_budget:.2f} remaining for {days_remaining} days. "
+                       f"Daily allowance: ₹{daily_allowance:.2f}. "
                        f"Monitor your spending to stay within budget."
             ))
         
         # Rule 4: Daily allowance insufficient
         if days_remaining > 0 and remaining_budget > 0:
             daily_allowance = remaining_budget / days_remaining
-            avg_daily_budget = monthly_budget / 30
-            if daily_allowance < (avg_daily_budget * 0.3):
+            avg_daily_budget = monthly_budget / Decimal("30")
+            if daily_allowance < (avg_daily_budget * Decimal("0.3")):
                 alerts.append(AIAlertCreate(
                     student_id=student.id,
                     alert_type=AlertType.BUDGET_RISK,
                     severity=AlertSeverity.WARNING,
                     title="Low Daily Allowance",
-                    message=f"Your daily allowance (${daily_allowance:.2f}) is significantly below average. "
+                    message=f"Your daily allowance (₹{daily_allowance:.2f}) is significantly below average. "
                            f"Consider adjusting spending patterns."
                 ))
         
@@ -185,7 +185,7 @@ class AIService:
         ).first()
         
         # Rule 1: Suggest investing if significant leftover budget
-        if student.remaining_budget > 100:  # Threshold: $100
+        if student.remaining_budget > 100:  # Threshold: ₹100
             current_date = date.today()
             budget_start = student.budget_start_date
             
@@ -203,7 +203,7 @@ class AIService:
                     alert_type=AlertType.INVESTMENT_SUGGESTION,
                     severity=AlertSeverity.INFO,
                     title="Consider Investing Leftover Budget",
-                    message=f"You have ${student.remaining_budget:.2f} remaining this month. "
+                    message=f"You have ₹{student.remaining_budget:.2f} remaining this month. "
                            f"Consider investing this amount to earn interest."
                 ))
         
@@ -215,9 +215,9 @@ class AIService:
                 alert_type=AlertType.INVESTMENT_SUGGESTION,
                 severity=AlertSeverity.WARNING,
                 title="Consider Withdrawing from Investment",
-                message=f"Your budget is negative by ${abs(student.remaining_budget):.2f}. "
-                       f"Consider withdrawing ${withdrawal_suggestion:.2f} from your investment "
-                       f"(current balance: ${investment.balance:.2f})."
+                message=f"Your budget is negative by ₹{abs(student.remaining_budget):.2f}. "
+                       f"Consider withdrawing ₹{withdrawal_suggestion:.2f} from your investment "
+                       f"(current balance: ₹{investment.balance:.2f})."
             ))
         
         return alerts
@@ -276,7 +276,7 @@ class AIService:
                     alert_type=AlertType.SPENDING_PATTERN,
                     severity=AlertSeverity.WARNING,
                     title="High Unplanned Expenses",
-                    message=f"Your unplanned expenses (${additional_expenses:.2f}) represent "
+                    message=f"Your unplanned expenses (₹{additional_expenses:.2f}) represent "
                            f"{additional_percentage:.1f}% of total spending. "
                            f"Consider planning ahead to better manage your budget."
                 ))
