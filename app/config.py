@@ -2,7 +2,12 @@
 Application configuration settings.
 Loads environment variables and provides configuration for the application.
 """
+from pathlib import Path
 from pydantic_settings import BaseSettings
+
+# Resolve the project root (.env lives next to the app/ package)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_ENV_FILE = _PROJECT_ROOT / ".env"
 
 
 class Settings(BaseSettings):
@@ -27,8 +32,11 @@ class Settings(BaseSettings):
     GROQ_MAX_TOKENS: int = 1024
     GROQ_TEMPERATURE: float = 0.7
 
+    # MarketAux Market News Configuration
+    MARKETAUX_API_TOKEN: str = ""
+
     class Config:
-        env_file = ".env"
+        env_file = str(_ENV_FILE)
         case_sensitive = True
 
 

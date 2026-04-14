@@ -1,12 +1,13 @@
 # Smart Student Expense & Budget System
 
-A full-stack financial management application for students with expense tracking, budget monitoring, AI-powered alerts, and an intelligent chatbot assistant.
+A full-stack financial management application for students with expense tracking, budget monitoring, AI-powered alerts, live market news, and an intelligent chatbot assistant.
 
 ## Features
 
 - **Budget Management**: Set monthly budgets with per-category daily limits
 - **Daily Expense Checklist**: Track daily expenses with checkbox-based submission
 - **Investment Tracking**: Manage investments with monthly interest calculations
+- **Live Market News**: Real-time financial news via MarketAux API (TSLA, AMZN, MSFT, AAPL, GOOGL)
 - **AI Advisory System**: Rule-based alerts for budget risks and spending patterns
 - **Chatbot Assistant**: Ask questions about your budget, expenses, and financial status
 
@@ -46,6 +47,12 @@ JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=168
 APP_NAME=Smart Student Expense & Budget System
 DEBUG=false
+
+# AI Chatbot (Groq)
+GROQ_API_KEY=your-groq-api-key
+
+# Live Market News (MarketAux)
+MARKETAUX_API_TOKEN=your-marketaux-api-token
 ```
 
 Create `frontend/.env`:
@@ -137,6 +144,7 @@ pblinit/
 | POST | /ai/evaluate | Trigger AI evaluation |
 | POST | /chatbot/ask | Ask chatbot |
 | GET | /investments/me | Get investment info |
+| GET | /investments/me/market-news | Get live market news |
 
 ## License
 

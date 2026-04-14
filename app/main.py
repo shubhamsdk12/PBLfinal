@@ -48,7 +48,14 @@ def on_startup():
     # Create all tables
     Base.metadata.create_all(bind=engine)
     print("[OK] Database tables created/verified")
-    
+
+    # Log API key configuration status
+    fh = "SET" if settings.MARKETAUX_API_TOKEN else "NOT SET"
+    gq = "SET" if settings.GROQ_API_KEY else "NOT SET"
+    print(f"[CONFIG] MARKETAUX_API_TOKEN: {fh}")
+    print(f"[CONFIG] GROQ_API_KEY:    {gq}")
+    print(f"[CONFIG] DATABASE_URL:    {settings.DATABASE_URL[:30]}...")
+
     # Run seed data
     try:
         from app.seed_data import run_seeder

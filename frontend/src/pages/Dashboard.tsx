@@ -71,31 +71,41 @@ export default function Dashboard() {
 
   const loadAllData = async () => {
     try {
-      const [status, expenseData, checklistData] = await Promise.all([
+      const [statusResult, expenseResult, checklistResult] = await Promise.allSettled([
         api.get<BudgetStatus>('/students/me/budget-status'),
         api.get<Expense[]>(
           `/expenses/?start_date=${format(startOfMonth(new Date()), 'yyyy-MM-dd')}&end_date=${format(new Date(), 'yyyy-MM-dd')}`
         ),
         api.get<DailyChecklistResponse>('/expenses/daily-checklist'),
       ])
-      setBudgetStatus(status)
-      setExpenses(expenseData)
-      setChecklist(checklistData)
 
-      // Initialize checklist items
-      const items: Record<number, DailyChecklistItem> = {}
-      checklistData.templates.forEach((template) => {
-        // Check if expense already exists for today
-        const existingExpense = checklistData.today_expenses.find(
-          (e) => e.category_id === template.category_id && !e.is_additional
-        )
-        items[template.category_id] = {
-          category_id: template.category_id,
-          amount: existingExpense ? existingExpense.amount : template.daily_budget,
-          is_checked: !!existingExpense,
-        }
-      })
-      setChecklistItems(items)
+      if (statusResult.status === 'fulfilled') {
+        setBudgetStatus(statusResult.value)
+      }
+
+      if (expenseResult.status === 'fulfilled') {
+        setExpenses(expenseResult.value)
+      }
+
+      if (checklistResult.status === 'fulfilled') {
+        const checklistData = checklistResult.value
+        setChecklist(checklistData)
+
+        // Initialize checklist items
+        const items: Record<number, DailyChecklistItem> = {}
+        checklistData.templates.forEach((template) => {
+          // Check if expense already exists for today
+          const existingExpense = checklistData.today_expenses.find(
+            (e) => e.category_id === template.category_id && !e.is_additional
+          )
+          items[template.category_id] = {
+            category_id: template.category_id,
+            amount: existingExpense ? existingExpense.amount : template.daily_budget,
+            is_checked: !!existingExpense,
+          }
+        })
+        setChecklistItems(items)
+      }
 
       // Try to load investment data
       try {

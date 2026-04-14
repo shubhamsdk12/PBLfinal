@@ -73,3 +73,21 @@ class InvestmentSummaryResponse(BaseModel):
     total_withdrawn: DecimalFloat
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MarketNewsItemResponse(BaseModel):
+    """Schema for a curated market news item."""
+    headline: str
+    summary: Optional[str] = None
+    url: str
+    source: Optional[str] = None
+    published_at: datetime
+    image_url: Optional[str] = None
+    suggestions: List[str] = Field(default_factory=list)
+
+
+class MarketNewsResponse(BaseModel):
+    """Schema for market news feed."""
+    items: List[MarketNewsItemResponse] = Field(default_factory=list)
+    fetched_at: datetime
+    note: Optional[str] = None

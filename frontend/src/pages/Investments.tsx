@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, Investment, InvestmentSummary } from '../lib/api'
+import { api, Investment, InvestmentSummary, MarketNewsResponse } from '../lib/api'
 import { TrendingUp, Plus, Minus, IndianRupee } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -10,15 +10,39 @@ export default function Investments() {
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [interestRate, setInterestRate] = useState('')
+  const [editInterestRate, setEditInterestRate] = useState('')
   const [initialBalance, setInitialBalance] = useState('')
+  const [createCompoundingMonths, setCreateCompoundingMonths] = useState('12')
+  const [editCompoundingMonths, setEditCompoundingMonths] = useState('12')
   const [submitting, setSubmitting] = useState(false)
+  const [newsLoading, setNewsLoading] = useState(false)
+  const [marketNews, setMarketNews] = useState<MarketNewsResponse | null>(null)
 
   useEffect(() => {
     loadInvestment()
+    loadMarketNews()
   }, [])
+
+  const loadMarketNews = async () => {
+    setNewsLoading(true)
+    try {
+      const news = await api.get<MarketNewsResponse>('/investments/me/market-news?limit=8')
+      setMarketNews(news)
+    } catch (error) {
+      console.error('Failed to load market news:', error)
+      setMarketNews({
+        items: [],
+        fetched_at: new Date().toISOString(),
+        note: 'Unable to fetch live market news right now.',
+      })
+    } finally {
+      setNewsLoading(false)
+    }
+  }
 
   const loadInvestment = async () => {
     setLoading(true)
@@ -58,6 +82,41 @@ export default function Investments() {
       setSubmitting(false)
     }
   }
+
+  const handleEdit = async () => {
+    if (!investment || !editInterestRate) return
+
+    setSubmitting(true)
+    try {
+      await api.put('/investments/me', {
+        monthly_interest_rate: parseFloat(editInterestRate),
+      })
+      setShowEdit(false)
+      await loadInvestment()
+    } catch (error) {
+      console.error('Failed to update investment:', error)
+      alert('Failed to update investment details')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const calculateProjectedAmount = (principal: number, monthlyRate: number, months: number) => {
+    if (principal <= 0 || monthlyRate < 0 || months <= 0) return principal
+    return principal * Math.pow(1 + monthlyRate / 100, months)
+  }
+
+  const createProjection = calculateProjectedAmount(
+    Number(initialBalance || 0),
+    Number(interestRate || 0),
+    Number(createCompoundingMonths || 0)
+  )
+
+  const editProjection = calculateProjectedAmount(
+    Number(investment?.balance || 0),
+    Number(editInterestRate || 0),
+    Number(editCompoundingMonths || 0)
+  )
 
   const handleDeposit = async () => {
     if (!depositAmount || !investment) return
@@ -154,6 +213,23 @@ export default function Investments() {
                   placeholder="5.00"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Compounding Period (Months)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={createCompoundingMonths}
+                  onChange={(e) => setCreateCompoundingMonths(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="12"
+                />
+              </div>
+              <div className="rounded-md bg-primary-50 border border-primary-100 p-3">
+                <p className="text-sm text-primary-700">Projected Amount</p>
+                <p className="text-lg font-semibold text-primary-900">₹{createProjection.toFixed(2)}</p>
+              </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleCreate}
@@ -167,12 +243,71 @@ export default function Investments() {
                     setShowCreate(false)
                     setInitialBalance('')
                     setInterestRate('')
+                    setCreateCompoundingMonths('12')
                   }}
                   className="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300"
                 >
                   Cancel
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Live Market News</h2>
+            <button
+              onClick={loadMarketNews}
+              disabled={newsLoading}
+              className="text-sm px-3 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {newsLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+
+          {marketNews?.note && (
+            <p className="text-sm text-gray-500 mb-3">{marketNews.note}</p>
+          )}
+
+          {newsLoading ? (
+            <div className="text-sm text-gray-500">Loading live news...</div>
+          ) : marketNews && marketNews.items.length > 0 ? (
+            <div className="space-y-3">
+              {marketNews.items.map((item) => (
+                <a
+                  key={`${item.url}-${item.published_at}`}
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  <p className="font-medium text-gray-900">{item.headline}</p>
+                  <p className="text-sm text-gray-600 mt-1">{item.summary || 'No summary available.'}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {item.source || 'Unknown source'} | {format(new Date(item.published_at), 'MMM d, yyyy h:mm a')}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {item.suggestions.map((suggestion) => (
+                      <span
+                        key={suggestion}
+                        className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
+                      >
+                        {suggestion}
+                      </span>
+                    ))}
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-sm text-gray-500">
+                {marketNews?.note || 'No market news available right now.'}
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                News may be temporarily unavailable. Click Refresh to try again.
+              </p>
             </div>
           )}
         </div>
@@ -190,6 +325,15 @@ export default function Investments() {
           </p>
         </div>
         <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              setEditInterestRate(investment.monthly_interest_rate.toString())
+              setShowEdit(true)
+            }}
+            className="bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700"
+          >
+            Edit Details
+          </button>
           <button
             onClick={() => setShowDeposit(true)}
             className="flex items-center bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700"
@@ -352,6 +496,67 @@ export default function Investments() {
         </div>
       )}
 
+      {/* Edit Investment Modal */}
+      {showEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-xl font-semibold mb-4">Edit Investment Details</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Monthly Interest Rate (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={editInterestRate}
+                  onChange={(e) => setEditInterestRate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="5.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Compounding Period (Months)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editCompoundingMonths}
+                  onChange={(e) => setEditCompoundingMonths(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="12"
+                />
+              </div>
+              <div className="rounded-md bg-primary-50 border border-primary-100 p-3">
+                <p className="text-sm text-primary-700">Projected Amount</p>
+                <p className="text-lg font-semibold text-primary-900">₹{editProjection.toFixed(2)}</p>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleEdit}
+                  disabled={submitting || !editInterestRate}
+                  className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {submitting ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowEdit(false)
+                    setEditCompoundingMonths('12')
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Transaction History */}
       {summary && summary.transactions.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
@@ -397,6 +602,64 @@ export default function Investments() {
           </div>
         </div>
       )}
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Live Market News</h2>
+          <button
+            onClick={loadMarketNews}
+            disabled={newsLoading}
+            className="text-sm px-3 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {newsLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+
+        {marketNews?.note && (
+          <p className="text-sm text-gray-500 mb-3">{marketNews.note}</p>
+        )}
+
+        {newsLoading ? (
+          <div className="text-sm text-gray-500">Loading live news...</div>
+        ) : marketNews && marketNews.items.length > 0 ? (
+          <div className="space-y-3">
+            {marketNews.items.map((item) => (
+              <a
+                key={`${item.url}-${item.published_at}`}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <p className="font-medium text-gray-900">{item.headline}</p>
+                <p className="text-sm text-gray-600 mt-1">{item.summary || 'No summary available.'}</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {item.source || 'Unknown source'} | {format(new Date(item.published_at), 'MMM d, yyyy h:mm a')}
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {item.suggestions.map((suggestion) => (
+                    <span
+                      key={suggestion}
+                      className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
+                    >
+                      {suggestion}
+                    </span>
+                  ))}
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+            <div className="text-center py-6">
+              <p className="text-sm text-gray-500">
+                {marketNews?.note || 'No market news available right now.'}
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                News may be temporarily unavailable. Click Refresh to try again.
+              </p>
+            </div>
+          )}
+      </div>
     </div>
   )
 }

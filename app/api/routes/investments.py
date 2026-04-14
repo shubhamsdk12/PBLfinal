@@ -13,6 +13,7 @@ from app.schemas.investment import (
     InvestmentUpdate,
     InvestmentResponse,
     InvestmentSummaryResponse,
+    MarketNewsResponse,
     InvestmentWithdrawRequest,
     InvestmentDepositRequest
 )
@@ -119,6 +120,21 @@ def get_investment_summary(
         )
     
     return InvestmentService.get_investment_summary(db, investment)
+
+
+@router.get("/me/market-news", response_model=MarketNewsResponse)
+def get_market_news(
+    limit: int = 10,
+    student: Student = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get live market news curated for mutual fund / fixed-deposit style investing.
+    """
+    # Authentication dependency ensures this endpoint is user-protected.
+    _ = (student, db)
+    safe_limit = max(1, min(limit, 20))
+    return InvestmentService.get_market_news(limit=safe_limit)
 
 
 @router.post("/me/deposit", response_model=InvestmentResponse)

@@ -7,11 +7,62 @@ from datetime import date, timedelta
 from decimal import Decimal
 from app.models.student import Student
 from app.models.expense import Expense, MonthlyBudgetSnapshot
+from app.models.investment import Investment, InvestmentTransaction, InvestmentTransactionType
 from app.schemas.student import BudgetStatusResponse
 
 
 class BudgetService:
     """Service for budget-related operations."""
+
+    @staticmethod
+    def _get_budget_cycle_bounds(student: Student) -> tuple[date, date]:
+        """Return the start and end date for student's current budget cycle."""
+        budget_start = student.budget_start_date
+
+        if budget_start.month == 12:
+            next_month_start = date(budget_start.year + 1, 1, 1)
+        else:
+            next_month_start = date(budget_start.year, budget_start.month + 1, 1)
+
+        month_end = next_month_start - timedelta(days=1)
+        return budget_start, month_end
+
+    @staticmethod
+    def _calculate_net_investment_outflow(
+        db: Session,
+        student: Student,
+        budget_start: date,
+        month_end: date
+    ) -> Decimal:
+        """
+        Calculate net money moved from budget to investments in current cycle.
+
+        INVEST transactions reduce available budget; WITHDRAW transactions restore it.
+        INTEREST is excluded because it is generated earnings, not budget spending.
+        """
+        investment = db.query(Investment).filter(Investment.student_id == student.id).first()
+        if not investment:
+            return Decimal("0.00")
+
+        invested_total = db.query(func.sum(InvestmentTransaction.amount)).filter(
+            and_(
+                InvestmentTransaction.investment_id == investment.id,
+                InvestmentTransaction.transaction_type == InvestmentTransactionType.INVEST,
+                func.date(InvestmentTransaction.created_at) >= budget_start,
+                func.date(InvestmentTransaction.created_at) <= month_end,
+            )
+        ).scalar() or Decimal("0.00")
+
+        withdrawn_total = db.query(func.sum(InvestmentTransaction.amount)).filter(
+            and_(
+                InvestmentTransaction.investment_id == investment.id,
+                InvestmentTransaction.transaction_type == InvestmentTransactionType.WITHDRAW,
+                func.date(InvestmentTransaction.created_at) >= budget_start,
+                func.date(InvestmentTransaction.created_at) <= month_end,
+            )
+        ).scalar() or Decimal("0.00")
+
+        return invested_total - withdrawn_total
     
     @staticmethod
     def calculate_remaining_budget(
@@ -26,16 +77,8 @@ class BudgetService:
         """
         if current_date is None:
             current_date = date.today()
-        
-        budget_start = student.budget_start_date
-        
-        # Calculate month end
-        if budget_start.month == 12:
-            next_month_start = date(budget_start.year + 1, 1, 1)
-        else:
-            next_month_start = date(budget_start.year, budget_start.month + 1, 1)
-        
-        month_end = next_month_start - timedelta(days=1)
+
+        budget_start, month_end = BudgetService._get_budget_cycle_bounds(student)
         
         # Sum all expenses in current budget cycle
         total_spent = db.query(func.sum(Expense.amount)).filter(
@@ -45,8 +88,15 @@ class BudgetService:
                 Expense.expense_date <= month_end
             )
         ).scalar() or Decimal("0.00")
-        
-        remaining = student.monthly_budget - total_spent
+
+        net_investment_outflow = BudgetService._calculate_net_investment_outflow(
+            db,
+            student,
+            budget_start,
+            month_end,
+        )
+
+        remaining = student.monthly_budget - total_spent - net_investment_outflow
         return remaining
     
     @staticmethod
@@ -78,16 +128,14 @@ class BudgetService:
         """
         if current_date is None:
             current_date = date.today()
-        
-        budget_start = student.budget_start_date
-        
-        # Calculate month boundaries
+
+        budget_start, month_end = BudgetService._get_budget_cycle_bounds(student)
+
         if budget_start.month == 12:
             next_month_start = date(budget_start.year + 1, 1, 1)
         else:
             next_month_start = date(budget_start.year, budget_start.month + 1, 1)
-        
-        month_end = next_month_start - timedelta(days=1)
+
         days_elapsed = (current_date - budget_start).days
         days_remaining = (next_month_start - current_date).days
         
