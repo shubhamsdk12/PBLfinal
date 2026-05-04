@@ -40,9 +40,36 @@ Guidelines:
 - Reference specific numbers from their data when giving advice
 - Do not make up financial data - only use what is provided in the context
 
+    Current User's Financial Context:
+    {user_context}
+    """
+
+    REPORT_SYSTEM_PROMPT = """You are an expert financial analyst AI for a student budget management app.
+Your task is to generate a comprehensive, well-structured financial report in pure Markdown format based on the provided user context.
+
+The report should include:
+# Financial Status Report
+## 1. Executive Summary
+Provide a high-level overview of the student's financial health and budget adherence.
+
+## 2. Budget Analysis
+Break down their spending vs. remaining budget. Highlight areas where they are doing well or overspending.
+
+## 3. Investment Status
+Summarize their current investment balance and the importance of continued saving.
+
+## 4. Actionable Recommendations
+Provide 3-5 specific, actionable steps to improve their financial standing.
+
+Guidelines:
+- Use clear headings, bullet points, and bold text for emphasis.
+- Format currency as Rs. [Amount].
+- Output ONLY the Markdown document, with no conversational filler at the beginning or end.
+
 Current User's Financial Context:
 {user_context}
 """
+
 
     @staticmethod
     def _build_user_context(budget_info: dict) -> str:
@@ -154,3 +181,53 @@ Current User's Financial Context:
             f"- Daily Allowance: Rs.{budget_info['daily_allowance']:.2f}\n\n"
             f"Please try again in a moment."
         )
+
+    @staticmethod
+    async def get_financial_report(budget_info: dict) -> str:
+        """
+        Generate a comprehensive Markdown financial report.
+
+        Args:
+            budget_info: Dictionary containing user's financial data
+
+        Returns:
+            AI-generated Markdown report string
+
+        Raises:
+            Exception: If API call fails
+        """
+        user_context = GroqChatbotService._build_user_context(budget_info)
+        system_prompt = GroqChatbotService.REPORT_SYSTEM_PROMPT.format(user_context=user_context)
+
+        messages = [{"role": "system", "content": system_prompt}]
+
+        headers = {
+            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": settings.GROQ_MODEL,
+            "messages": messages,
+            "max_tokens": 2048,  # Larger token limit for a full report
+            "temperature": 0.5,  # Lower temperature for a more formal report
+        }
+
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            response = await client.post(
+                GroqChatbotService.GROQ_API_URL,
+                headers=headers,
+                json=payload
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Groq API error: {response.status_code} - {response.text}")
+                raise Exception(f"Groq API returned status {response.status_code}")
+
+            data = response.json()
+
+            if "choices" in data and len(data["choices"]) > 0:
+                return data["choices"][0]["message"]["content"]
+            else:
+                raise Exception("Invalid response format from Groq API")
+

@@ -34,10 +34,13 @@ export default function Expenses() {
       // Initialize checklist items from templates
       const items: Record<number, DailyChecklistItem> = {}
       data.templates.forEach((template) => {
+        const existingExpense = data.today_expenses.find(
+          (e) => e.category_id === template.category_id && !e.is_additional
+        )
         items[template.category_id] = {
           category_id: template.category_id,
-          amount: 0,
-          is_checked: false,
+          amount: existingExpense ? existingExpense.amount : template.daily_budget || 0,
+          is_checked: !!existingExpense,
         }
       })
       setChecklistItems(items)

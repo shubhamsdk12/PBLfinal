@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { api, ChatResponse } from '../lib/api'
-import { Send, Bot, User, Loader2 } from 'lucide-react'
+import { api, ChatResponse, ReportResponse } from '../lib/api'
+import { Send, Bot, User, Loader2, Download } from 'lucide-react'
 
 interface Message {
   id: number
@@ -20,6 +20,7 @@ export default function Chatbot() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [generatingReport, setGeneratingReport] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -77,13 +78,69 @@ export default function Chatbot() {
     }
   }
 
+  const handleGenerateReport = async () => {
+    setGeneratingReport(true)
+    try {
+      const response = await api.post<ReportResponse>('/chatbot/report')
+      
+      // Create a Blob from the markdown
+      const blob = new Blob([response.report_markdown], { type: 'text/markdown' })
+      const url = window.URL.createObjectURL(blob)
+      
+      // Create a temporary link element to trigger download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Financial_Report_${new Date().toISOString().split('T')[0]}.md`
+      document.body.appendChild(link)
+      link.click()
+      
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      // Add a message indicating success
+      const successMessage: Message = {
+        id: Date.now(),
+        text: 'I have generated your financial report. The download should start automatically!',
+        sender: 'bot',
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, successMessage])
+
+    } catch (error) {
+      const errorMessage: Message = {
+        id: Date.now(),
+        text: 'Sorry, I encountered an error while generating your report.',
+        sender: 'bot',
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setGeneratingReport(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Budget Assistant</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Ask me about your budget, expenses, or financial status
-        </p>
+      <div className="flex justify-between items-start sm:items-center flex-col sm:flex-row gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Budget Assistant</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Ask me about your budget, expenses, or financial status
+          </p>
+        </div>
+        <button
+          onClick={handleGenerateReport}
+          disabled={generatingReport}
+          className="flex items-center space-x-2 bg-primary-50 text-primary-600 px-4 py-2 rounded-lg hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors"
+        >
+          {generatingReport ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          <span>{generatingReport ? 'Generating...' : 'Download Report'}</span>
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow flex flex-col" style={{ height: 'calc(100vh - 200px)' }}>

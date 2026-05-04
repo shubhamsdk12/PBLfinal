@@ -36,6 +36,11 @@ class ChatResponse(BaseModel):
     ai_powered: bool = True
 
 
+class ReportResponse(BaseModel):
+    """Schema for report response."""
+    report_markdown: str
+
+
 def get_budget_info(db: Session, student: Student) -> dict:
     """Get comprehensive budget information for the student."""
     budget_start = student.budget_start_date
@@ -151,4 +156,34 @@ async def ask_chatbot(
             reply=GroqChatbotService.get_fallback_response(info),
             data=info,
             ai_powered=False
+        )
+
+@router.post("/report", response_model=ReportResponse)
+async def generate_report(
+    student: Student = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate a comprehensive financial report in Markdown format.
+    """
+    info = get_budget_info(db, student)
+
+    if not info["budget_setup_complete"]:
+        return ReportResponse(
+            report_markdown="# Financial Report\n\nIt looks like you haven't set up your budget yet! Please go to the Dashboard and set up your monthly budget first."
+        )
+
+    if not settings.GROQ_API_KEY:
+        logger.warning("GROQ_API_KEY not configured, cannot generate report")
+        return ReportResponse(
+            report_markdown="# Financial Report\n\nAI features are currently unavailable because the Groq API key is not configured."
+        )
+
+    try:
+        report = await GroqChatbotService.get_financial_report(info)
+        return ReportResponse(report_markdown=report)
+    except Exception as e:
+        logger.error(f"Report generation error: {str(e)}")
+        return ReportResponse(
+            report_markdown=f"# Financial Report\n\nAn error occurred while generating the report. Please try again later."
         )

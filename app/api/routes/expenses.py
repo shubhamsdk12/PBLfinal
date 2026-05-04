@@ -135,16 +135,32 @@ def submit_daily_checklist(
                     detail=f"Expense category {item.category_id} not found"
                 )
 
-            # Create expense record
-            expense = Expense(
-                student_id=student.id,
-                category_id=item.category_id,
-                amount=item.amount,
-                expense_date=checklist_data.expense_date,
-                is_additional=False
-            )
-            db.add(expense)
-            created_expenses.append(expense)
+            # Check if expense already exists for this category and date
+            existing_expense = db.query(Expense).filter(
+                and_(
+                    Expense.student_id == student.id,
+                    Expense.category_id == item.category_id,
+                    Expense.expense_date == checklist_data.expense_date,
+                    Expense.is_additional == False
+                )
+            ).first()
+
+            if existing_expense:
+                # Update amount if it changed
+                if existing_expense.amount != item.amount:
+                    existing_expense.amount = item.amount
+                created_expenses.append(existing_expense)
+            else:
+                # Create expense record
+                expense = Expense(
+                    student_id=student.id,
+                    category_id=item.category_id,
+                    amount=item.amount,
+                    expense_date=checklist_data.expense_date,
+                    is_additional=False
+                )
+                db.add(expense)
+                created_expenses.append(expense)
 
     # Process additional expenses with custom categories
     if checklist_data.additional_expenses:
