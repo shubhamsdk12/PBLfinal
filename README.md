@@ -10,6 +10,7 @@ A full-stack financial management application for students with expense tracking
 - **Live Market News**: Real-time financial news via MarketAux API (TSLA, AMZN, MSFT, AAPL, GOOGL)
 - **AI Advisory System**: Rule-based alerts for budget risks and spending patterns
 - **Chatbot Assistant**: Ask questions about your budget, expenses, and financial status
+- **AI Financial Reports**: Generate downloadable, detailed Markdown reports of your financial health via the Chatbot
 
 ## Tech Stack
 
@@ -143,6 +144,7 @@ pblinit/
 | GET | /ai/alerts | Get AI alerts |
 | POST | /ai/evaluate | Trigger AI evaluation |
 | POST | /chatbot/ask | Ask chatbot |
+| POST | /chatbot/report | Generate downloadable financial report |
 | GET | /investments/me | Get investment info |
 | GET | /investments/me/market-news | Get live market news |
 
